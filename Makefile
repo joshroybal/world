@@ -14,7 +14,7 @@ $(PROG): $(OBJS)
 
 install:
 	sudo -u apache -g apache cp bin/world.cgi /srv/httpd/cgi-bin/world.cgi
-	sudo -u apache -g apache cp -R dat/* /srv/httpd/cgi-bin/world
+	# sudo -u apache -g apache cp -R dat/* /srv/httpd/cgi-bin/world
 	sudo -u apache -g apache cp src/world.html /srv/httpd/htdocs
 
 .PHONY : clean

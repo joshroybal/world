@@ -49,19 +49,25 @@ struct record *linear_search(char *target)
    return(NULL);
 }
 
-void print_record_html(struct record *rec)
+void print_record_html(struct record *rec, short n)
 {
-   printf("<tr><td><img src='/countries/%s'> %s</td>", rec->flag, rec->country);
+   printf("<tr>");
+   if (n > 0)
+      printf("<td style='text-align:right;'>%d</td>", n);
+   printf("<td><img src='/countries/%s'> %s</td>", rec->flag, rec->country);
    printf("<td>%s</td>", rec->capital);
    printf("<td style='text-align:right;'>%'d</td>", rec->population);
    printf("<td style='text-align:right;'>%'d</td>", rec->area);
    printf("<td style='text-align:right;'>$%'d</td>", rec->gdp);
-   printf("<td style='text-align:right;'>$%'lld</td></tr>\n", 1000000LL*rec->gdp/rec->population);
+   printf("<td style='text-align:right;'>$%'lld</td>", 1000000LL*rec->gdp/rec->population);
+   printf("</tr>\n");
 }
 
-void print_html_table_header()
+void print_html_table_header(short flag)
 {
    printf("<tr>");
+   if (flag)
+      printf("<th>Rank</th>");
    printf("<th style='text-align:center;'>Country</th>");
    printf("<th style='text-align:center;'>Capital</th>");
    printf("<th style='text-align:center;'>Population</th>");
@@ -72,12 +78,72 @@ void print_html_table_header()
 
 }
 
+void print_html_table(short process, short order)
+{
+   short i;
+   unsigned char *idx;
+   unsigned *keys;
+   struct record *rec = (struct record *) malloc(sizeof(struct record));
+   FILE *fp;
+
+   if (process != country) {
+      idx = (unsigned char *) malloc(NORECS * sizeof(unsigned char));
+      if (process != per_capita) {
+         if (process == capital) {
+            fp = fopen("world/capital.dat", "rb");
+         } else if (process == pop) {
+            fp = fopen("world/population.dat", "rb");
+         } else if (process == area) {
+            fp = fopen("world/area.dat", "rb");
+         } else if (process == gdp) {
+            fp = fopen("world/gdp.dat", "rb");
+         }
+         fread(idx, sizeof(unsigned char), NORECS, fp);
+         fclose(fp);    
+      } else {
+         keys = (unsigned *) malloc(NORECS * sizeof(unsigned));
+         fp = fopen("world/countries.dat", "rb");
+         for (i = 0; i < NORECS; ++i) {
+            fread(rec, sizeof(struct record), 1, fp);
+            keys[i] = 1000000 * (float)rec->gdp / rec->population;
+         }
+         fclose(fp);
+         shell_sort_idx(keys, idx, NORECS);
+         free(keys);
+      }
+   }
+
+   puts("<table class='gradienttable-left-justify'>");
+   print_html_table_header(process);
+   fp = fopen("world/countries.dat", "rb");
+   if (order == ascending) {
+      for (i = 0; i < NORECS; ++i) {
+         if (process != country)
+            fseek(fp, idx[i] * sizeof(struct record), SEEK_SET);
+         fread(rec, sizeof(struct record), 1, fp);
+         print_record_html(rec, i+1);
+      }
+   } else {
+      for (i = NORECS - 1; i >= 0; --i) {
+         if (process == country)
+            fseek(fp, i * sizeof(struct record), SEEK_SET);
+         else
+            fseek(fp, idx[i] * sizeof(struct record), SEEK_SET);
+         fread(rec, sizeof(struct record), 1, fp);
+         print_record_html(rec, NORECS-i);
+      }
+   }   
+   fclose(fp);
+   free(rec);
+   puts("</table>");
+}
+
 void print_html_navlinks()
 {
    puts("<p><a href='/index.html'>Home</a> | <a href='/world.html'>Back</a></p>");
 }
 
-void print_html_form(char *target, char *option, char *order)
+void print_html_form(char *target, char *option, char *flag)
 {
    puts("<form action = \"world.cgi\" method = \"POST\" accept-charset=\"UTF-8\">");
    printf("<div>target: <input type = \"text\" name = \"target\" size=\"50\" value = \"%s\"></div>\n", target);
@@ -127,7 +193,7 @@ void print_html_form(char *target, char *option, char *order)
    
    /* order options */
    puts("<div><label>order: </label>");   
-   if ( strcmp(order, "ascending") == 0 ) {
+   if ( strcmp(flag, "ascending") == 0 ) {
       puts("<label><input type=\"radio\" name=\"order\" value=\"ascending\" checked>ascending</label>");
       puts("<label><input type=\"radio\" name=\"order\" value=\"descending\">descending</label></div>");
    } else {
