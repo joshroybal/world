@@ -60,21 +60,25 @@ int cgiMain()
       order = descending;
 
    if (process == retrieve) {
-      rec = search(target);
-      if (rec != NULL) {
-         puts("<table class='gradienttable-left-justify'>");
-         print_html_table_header(retrieve);            
-         print_record_html(rec, retrieve);
-         puts("</table>");
+      if ( strstr(target, "<") == 0 && strstr(target, ">") == 0 ) {
+         rec = search(target);      
+         if (rec != NULL) {
+            puts("<table class='gradienttable-left-justify'>");
+            print_html_table_header(retrieve);            
+            print_record_html(rec, retrieve);
+            puts("</table>");
+         } else {
+            puts("<p>target not found</p>");
+         }
       } else {
-         puts("<p>target not found</p>");
+         puts("<p>I'm sorry Dave, I'm afraid I can't do that.</p>\n");
       }
    } else {
       print_html_table(process, order);
    }
 
    print_html_navlinks();
-   puts("<footer><p>copyright \u00A9 2018 Josh Roybal</p></footer>");
+   puts("<footer><p>CGIC, copyright &#x24B8 1996-2019 by Thomas Boutell and Boutell.Com, Inc. Permission is granted to use CGIC in any application, commercial or noncommercial, at no cost. Otherwise, copyright &#x24B8; 2019 Joshua Roybal</p></footer>");
    puts("</body>");
    puts("</html>");
    return(0);
